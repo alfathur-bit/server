@@ -357,6 +357,62 @@
                                         <div class="bg-indigo-500 h-full rounded-full" style="width: 45%"></div>
                                     </div>
                                 </div>
+
+                            <!-- Panduan Setup Lengkap -->
+                            <div class="mt-4 p-4 bg-slate-900 border border-slate-800 rounded-xl text-xs space-y-3">
+                                <h5 class="font-bold text-white text-sm">Panduan Setup Lengkap</h5>
+                                <p class="text-slate-400 text-[11px]">Ikuti langkah berikut satu per satu agar NetPortal dapat terhubung ke MikroTik Router fisik dengan benar.</p>
+
+                                <ol class="list-decimal list-inside space-y-2 text-[11px] text-slate-300">
+                                    <li>
+                                        Persiapan Router: buka <strong>New Terminal / Winbox</strong> dan jalankan perintah aktivasi HTTPS admin:
+                                        <div class="mt-1 flex gap-2">
+                                            <code class="p-2 bg-slate-950 rounded font-mono text-[11px] text-emerald-400">/ip service set www-ssl disabled=no port=443</code>
+                                            <button onclick="copyCommand('/ip service set www-ssl disabled=no port=443')" class="px-2 py-1 bg-indigo-600 text-white rounded text-[11px]">Salin</button>
+                                        </div>
+                                    </li>
+
+                                    <li>
+                                        (Opsional) Aktifkan HTTP jika diperlukan untuk testing lokal:
+                                        <div class="mt-1 flex gap-2">
+                                            <code class="p-2 bg-slate-950 rounded font-mono text-[11px] text-emerald-400">/ip service set www disabled=no port=80</code>
+                                            <button onclick="copyCommand('/ip service set www disabled=no port=80')" class="px-2 py-1 bg-indigo-600 text-white rounded text-[11px]">Salin</button>
+                                        </div>
+                                    </li>
+
+                                    <li>
+                                        Jika menggunakan sertifikat sendiri: impor sertifikat dan set service www-ssl untuk memakai sertifikat, atau gunakan proxy lokal jika sertifikat self-signed memblokir browser.
+                                    </li>
+
+                                    <li>
+                                        (Direkomendasikan) Jalankan proxy lokal di mesin admin untuk mengatasi CORS/self-signed:
+                                        <div class="mt-1 flex gap-2 items-center">
+                                            <code class="p-2 bg-slate-950 rounded font-mono text-[11px] text-emerald-400">cd Downloads/proxy-server && npm install && PROXY_KEY=rahasia npm start</code>
+                                            <button onclick="copyCommand('cd Downloads/proxy-server && npm install && PROXY_KEY=rahasia npm start')" class="px-2 py-1 bg-indigo-600 text-white rounded text-[11px]">Salin</button>
+                                        </div>
+                                        Isi <strong>Proxy Key</strong> di form Pengaturan Router pada NetPortal sama persis dengan yang Anda gunakan untuk menjalankan proxy.
+                                    </li>
+
+                                    <li>
+                                        Di NetPortal: isi IP/port/user/pass Router, centang <em>Gunakan Proxy Lokal</em> jika memakai proxy, isi Proxy Key jika diperlukan, lalu klik <strong>Cek Jangkauan</strong> dan selanjutnya <strong>Tes Koneksi API</strong>.
+                                    </li>
+
+                                    <li>
+                                        Verifikasi: jika tes sukses, periksa data sistem (uptime, CPU Load, daftar client) di Dashboard. Jika gagal, lihat bagian Troubleshooting di bawah.
+                                    </li>
+                                </ol>
+
+                                <details class="mt-2 text-[11px] text-slate-300">
+                                    <summary class="cursor-pointer font-semibold text-slate-200">Troubleshooting & Tips</summary>
+                                    <ul class="list-disc list-inside mt-2 space-y-1">
+                                        <li>CORS: jika browser blokir, gunakan proxy lokal atau aktifkan CORS di webserver router (tidak disarankan untuk publik tanpa proteksi).</li>
+                                        <li>Firewall: pastikan firewall/router tidak memblokir akses dari mesin yang menjalankan browser/proxy.</li>
+                                        <li>SSL: bila router memakai sertifikat self-signed, proxy dengan rejectUnauthorized=false membantu testing lokal.</li>
+                                        <li>Port: periksa port admin (80/443) sesuai konfigurasi RouterOS.</li>
+                                        <li>Keamanan: jangan publish `proxy-server` ke internet tanpa autentikasi tambahan.</li>
+                                    </ul>
+                                </details>
+                            </div>
                                 <div>
                                     <div class="flex justify-between text-xs font-semibold mb-1">
                                         <span class="flex items-center gap-1.5"><i data-lucide="apple" class="w-3.5 h-3.5 text-slate-400"></i> iOS/macOS</span>
@@ -1020,7 +1076,11 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2" id="mikrotik-form-fields">
                                 <div>
                                     <label for="mt_ip" class="block text-xs text-slate-400 font-semibold mb-1.5">IP Address / Host Router</label>
-                                            <input type="text" id="mt_ip" value="192.168.88.1" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 font-mono">
+                                    <div class="flex items-center gap-2">
+                                        <input type="text" id="mt_ip" value="192.168.88.1" class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 font-mono">
+                                        <button type="button" onclick="checkRouterReachabilityUI()" class="px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-300 hover:bg-slate-850 transition">Cek Jangkauan</button>
+                                    </div>
+                                    <div class="mt-2 text-[11px]"><span id="mt_reach_status" class="text-slate-400">Status: belum diperiksa</span></div>
                                 </div>
                                 <div>
                                             <label for="mt_port" class="block text-xs text-slate-400 font-semibold mb-1.5">Port REST API (www-ssl)</label>
@@ -1033,6 +1093,14 @@
                                 <div>
                                             <label for="mt_pass" class="block text-xs text-slate-400 font-semibold mb-1.5">Password</label>
                                             <input type="password" id="mt_pass" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                                </div>
+                                <div class="flex items-center col-span-1 sm:col-span-2 gap-2">
+                                    <input type="checkbox" id="mt_use_proxy" />
+                                    <label for="mt_use_proxy" class="text-xs text-slate-400">Gunakan Proxy Lokal (<span class="font-mono">http://localhost:3000</span>)</label>
+                                </div>
+                                <div class="col-span-1 sm:col-span-2">
+                                    <label for="mt_proxy_key" class="block text-xs text-slate-400 font-semibold mb-1.5">Proxy Key (opsional)</label>
+                                    <input type="text" id="mt_proxy_key" placeholder="isi jika proxy memakai API key" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 font-mono">
                                 </div>
                             </div>
 
@@ -1054,10 +1122,19 @@
                                 <p class="text-slate-400 leading-relaxed text-[11px]">
                                     Secara default, browser akan memblokir request ke IP lokal karena proteksi keamanan <strong class="text-indigo-400">CORS / Mix-Content</strong>. Pastikan Anda menjalankan perintah berikut di New Terminal MikroTik Anda:
                                 </p>
-                                <code class="block p-2 bg-slate-900 rounded font-mono text-[10px] text-emerald-400 select-all border border-slate-800">
-                                    /ip service set www-ssl disabled=no port=443<br>
-                                    /ip service set www disabled=no port=80
-                                </code>
+                                <div class="space-y-2">
+                                    <code id="cmd-enable-https" class="block p-2 bg-slate-900 rounded font-mono text-[10px] text-emerald-400 select-all border border-slate-800">/ip service set www-ssl disabled=no port=443</code>
+                                    <div class="flex gap-2">
+                                        <button onclick="copyCommand(document.getElementById('cmd-enable-https').innerText)" class="px-2 py-1 bg-indigo-600 text-white text-[11px] rounded">Salin perintah HTTPS</button>
+                                        <button onclick="copyCommand(document.getElementById('cmd-enable-https').innerText + ' && /certificate import ...')" class="px-2 py-1 bg-slate-800 text-slate-200 text-[11px] rounded">Salin + petunjuk sertifikat</button>
+                                    </div>
+
+                                    <code id="cmd-enable-http" class="block p-2 bg-slate-900 rounded font-mono text-[10px] text-emerald-400 select-all border border-slate-800">/ip service set www disabled=no port=80</code>
+                                    <div class="flex gap-2">
+                                        <button onclick="copyCommand(document.getElementById('cmd-enable-http').innerText)" class="px-2 py-1 bg-indigo-600 text-white text-[11px] rounded">Salin perintah HTTP</button>
+                                        <button onclick="copyCommand('Gunakan proxy lokal atau tambahkan CORS di webserver. Jika browser masih memblokir, gunakan proxy.')" class="px-2 py-1 bg-slate-800 text-slate-200 text-[11px] rounded">Salin tips CORS</button>
+                                    </div>
+                                </div>
                                 <p class="text-slate-500 text-[10px] italic">
                                     Tips: Gunakan ekstensi browser "Allow CORS" saat testing dari localhost jika browser memblokir request API langsung.
                                 </p>
@@ -1591,6 +1668,10 @@
                 document.getElementById('mt_port').value = mikrotikConfig.port;
                 document.getElementById('mt_user').value = mikrotikConfig.user;
                 document.getElementById('mt_pass').value = mikrotikConfig.pass;
+                const useProxyEl = document.getElementById('mt_use_proxy');
+                if (useProxyEl) useProxyEl.checked = !!mikrotikConfig.useProxy;
+                const proxyKeyEl = document.getElementById('mt_proxy_key');
+                if (proxyKeyEl) proxyKeyEl.value = mikrotikConfig.proxyKey || '';
             }
             updateMikrotikBadge();
         }
@@ -1618,6 +1699,10 @@
             mikrotikConfig.port = document.getElementById('mt_port').value.trim();
             mikrotikConfig.user = document.getElementById('mt_user').value.trim();
             mikrotikConfig.pass = document.getElementById('mt_pass').value;
+            const useProxyEl = document.getElementById('mt_use_proxy');
+            mikrotikConfig.useProxy = useProxyEl ? !!useProxyEl.checked : false;
+            const proxyKeyEl = document.getElementById('mt_proxy_key');
+            mikrotikConfig.proxyKey = proxyKeyEl ? proxyKeyEl.value.trim() : '';
 
             localStorage.setItem('mikrotik_api_config', JSON.stringify(mikrotikConfig));
         }
@@ -1633,16 +1718,95 @@
             }
         }
 
+        // Cek jangkauan (reachability) sederhana ke Router (menggunakan beberapa teknik fallback)
+        function setMtReachStatus(text, ok) {
+            const el = document.getElementById('mt_reach_status');
+            if (!el) return;
+            el.innerText = `Status: ${text}`;
+            el.classList.remove('text-emerald-400','text-rose-400','text-slate-400');
+            el.classList.add(ok ? 'text-emerald-400' : 'text-rose-400');
+        }
+
+        function probeRouterReachable(ip, port, timeout = 3000) {
+            return new Promise(resolve => {
+                if (!ip) return resolve(false);
+
+                let finished = false;
+                const finish = (v) => { if (!finished) { finished = true; resolve(v); } };
+
+                // Timeout fallback
+                const tId = setTimeout(() => finish(false), timeout);
+
+                // Attempt 1: simple fetch using no-cors (may still reject on network errors)
+                try {
+                    fetch(`https://${ip}:${port}/`, { method: 'GET', mode: 'no-cors' }).then(() => {
+                        clearTimeout(tId);
+                        finish(true);
+                    }).catch(() => {
+                        // ignore, fallback to image
+                        // Attempt 2: image probe to HTTP
+                        const img = new Image();
+                        img.onload = () => { clearTimeout(tId); finish(true); };
+                        img.onerror = () => { /* final fallback to failure */ };
+                        try {
+                            img.src = `http://${ip}:${port}/favicon.ico?rand=${Date.now()}`;
+                        } catch (e) {
+                            // ignore
+                        }
+                    });
+                } catch (e) {
+                    // If fetch throws synchronously, try image
+                    const img = new Image();
+                    img.onload = () => { clearTimeout(tId); finish(true); };
+                    img.onerror = () => { /* fail */ };
+                    try { img.src = `http://${ip}:${port}/favicon.ico?rand=${Date.now()}`; } catch (e) {}
+                }
+            });
+        }
+
+        async function checkRouterReachabilityUI() {
+            const ip = document.getElementById('mt_ip').value.trim();
+            const port = document.getElementById('mt_port').value.trim() || '80';
+            setMtReachStatus('Memeriksa...', false);
+            try {
+                const ok = await probeRouterReachable(ip, port, 3500);
+                if (ok) {
+                    setMtReachStatus(`Tersambung (${ip}:${port})`, true);
+                    simulasiLog(`Host ${ip}:${port} terjangkau (probe).`);
+                } else {
+                    setMtReachStatus(`Tidak terjangkau (${ip}:${port})`, false);
+                    simulasiLog(`Host ${ip}:${port} tidak terjangkau oleh browser (probe).`);
+                }
+                return ok;
+            } catch (err) {
+                setMtReachStatus('Pemeriksaan gagal', false);
+                return false;
+            }
+        }
+
         // --- MIKROTIK REST API FETCH IMPLEMENTATION ---
         async function fetchFromMikrotik(endpoint, method = 'GET', body = null) {
             const { ip, port, user, pass } = mikrotikConfig;
             
             // Konfigurasi Basic Auth Headers
             const headers = new Headers();
-            headers.set('Authorization', 'Basic ' + btoa(user + ":" + pass));
             headers.set('Content-Type', 'application/json');
 
-            const url = `https://${ip}:${port}/rest${endpoint}`;
+            // Jika menggunakan proxy lokal, panggil proxy dan sertakan informasi router via header
+            let url;
+            if (mikrotikConfig.useProxy) {
+                // Proxy akan menerima path setelah /proxy
+                url = `http://localhost:3000/proxy/rest${endpoint}`;
+                // Sertakan kredensial router agar proxy bisa meneruskan
+                headers.set('x-mt-ip', ip);
+                headers.set('x-mt-port', port);
+                headers.set('x-mt-user', user);
+                headers.set('x-mt-pass', pass);
+                if (mikrotikConfig.proxyKey) headers.set('x-proxy-key', mikrotikConfig.proxyKey);
+            } else {
+                headers.set('Authorization', 'Basic ' + btoa(user + ":" + pass));
+                url = `https://${ip}:${port}/rest${endpoint}`;
+            }
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 4000); // Timeout 4 Detik
 
@@ -1677,6 +1841,11 @@
             btn.innerHTML = `<i class="w-3.5 h-3.5 animate-spin border-2 border-white border-t-transparent rounded-full mr-1.5"></i> Menghubungkan...`;
 
             try {
+                // Periksa terlebih dahulu apakah host dapat dijangkau dari browser (probe sederhana)
+                const reachable = await checkRouterReachabilityUI();
+                if (!reachable) {
+                    showToast('Host mungkin tidak dapat dijangkau langsung dari browser (CORS/SSL). Mencoba REST API tetap.');
+                }
                 // Endpoint ringan untuk tes system resource
                 const data = await fetchFromMikrotik('/system/resource');
                 showToast("Koneksi ke MikroTik API Sukses!");
@@ -2618,6 +2787,31 @@
                 btn.innerHTML = '<i data-lucide="moon" class="w-4 h-4"></i>';
             }
             lucide.createIcons();
+        }
+
+        // Utility: copy text to clipboard with toast
+        function copyCommand(text) {
+            if (!text) return;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast('Perintah disalin ke clipboard');
+                    simulasiLog('Perintah disalin: ' + (text.length > 100 ? text.substring(0,100) + '...' : text));
+                }).catch(() => {
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand('copy'); showToast('Perintah disalin ke clipboard'); }
+            catch (e) { showToast('Gagal menyalin'); }
+            document.body.removeChild(ta);
         }
     </script>
 </body>
